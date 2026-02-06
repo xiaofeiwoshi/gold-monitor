@@ -169,75 +169,99 @@
 </div>
 
 <script>
-    const MY_WORKER_URL = 'https://goldapi.18391787044.workers.dev/';
+    // 1. 指向你跑通的那个 Worker
+    const MY_WORKER_URL = 'https://goldapi.18391787044.workers.dev';
+    
+    let monitorTimer = null;
     
     async function updateGoldPrice() {
         const priceVal = document.getElementById('price-val');
         const statusBox = document.getElementById('status-box');
+        
+        // 开启加载状态
         priceVal.classList.add('loading');
     
         try {
-            // 请求你自己做的中转接口
+            // 请求你自己的 Worker
             const response = await fetch(MY_WORKER_URL);
             const data = await response.json();
-            
-            // 接口 2: 汇率 (这个接口通常国内可以直接访问，如果不稳也可以按同样方法写进 Worker)
-            const fxRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-            const fxData = await fxRes.json();
     
-            const usdOzPrice = parseFloat(data.price);
-            const usdCnyRate = fxData.rates.CNY;
+            // 检查 Worker 是否报错
+            if (data.error) throw new Error(data.error);
+    
+            const usdPrice = data.usdPrice; // 国际金价
+            const cnyRate = data.cnyRate;   // 汇率
             const premium = parseFloat(document.getElementById('premiumInput').value) || 0;
     
-            // 换算人民币/克
-            const basePriceGram = (usdOzPrice / 31.1035) * usdCnyRate;
+            // --- 计算逻辑说明 ---
+            // 如果 usdPrice 是盎司价 (约2000+)，则需要 / 31.1035
+            // 如果 usdPrice 已经是克价，则直接乘以汇率
+            // 鉴于你目前回显是 4800+，这通常是某种克价的变体或特定基数，
+            // 这里假设它是盎司价进行标准换算：
+            let basePriceGram;
+            if (usdPrice > 1000) {
+                basePriceGram = (usdPrice / 31.1035) * cnyRate;
+            } else {
+                basePriceGram = usdPrice * cnyRate;
+            }
+    
             const finalPrice = (basePriceGram + premium).toFixed(2);
     
+            // 更新界面
             priceVal.innerText = finalPrice;
             priceVal.classList.remove('loading');
             
             statusBox.innerHTML = `
-                国际黄金: $${usdOzPrice.toFixed(2)} /oz<br>
-                汇率: ${usdCnyRate.toFixed(4)} | 溢价: ${premium}元<br>
-                更新: ${new Date().toLocaleTimeString()}
+                国际金价: $${usdPrice.toFixed(2)} /oz<br>
+                实时汇率: ${cnyRate.toFixed(4)}<br>
+                更新时间: ${new Date(data.time).toLocaleTimeString()}
             `;
+    
         } catch (error) {
-            console.error(error);
-            statusBox.innerHTML = `<span style="color:#ff453a">获取失败，请确认 Worker 地址是否正确</span>`;
+            console.error("更新失败:", error);
+            priceVal.innerText = "Error";
+            statusBox.innerHTML = `<span style="color:#ff453a">数据同步失败: ${error.message}</span>`;
         }
     }
-
+    
+    // 切换主题逻辑
     function toggleTheme() {
         const html = document.documentElement;
         const targetTheme = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         html.setAttribute('data-theme', targetTheme);
         localStorage.setItem('theme', targetTheme);
     }
-
+    
+    // 应用设置逻辑
     function applySettings() {
         localStorage.setItem('gold_interval', document.getElementById('intervalInput').value);
         localStorage.setItem('gold_premium', document.getElementById('premiumInput').value);
         startApp();
+        alert('配置已保存');
     }
-
+    
+    // 启动 App
     function startApp() {
         if (monitorTimer) clearInterval(monitorTimer);
-        const interval = (localStorage.getItem('gold_interval') || 30);
-        const premium = (localStorage.getItem('gold_premium') || 12);
-        const theme = (localStorage.getItem('theme') || 'dark');
-
+        
+        const interval = localStorage.getItem('gold_interval') || 30;
+        const premium = localStorage.getItem('gold_premium') || 12;
+        const theme = localStorage.getItem('theme') || 'dark';
+    
         document.getElementById('intervalInput').value = interval;
         document.getElementById('premiumInput').value = premium;
         document.documentElement.setAttribute('data-theme', theme);
-
+    
         updateGoldPrice();
         monitorTimer = setInterval(updateGoldPrice, interval * 1000);
     }
-
+    
+    // 首次运行
     startApp();
 </script>
 </body>
 
 </html>
+
 
 
