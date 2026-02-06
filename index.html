@@ -244,8 +244,8 @@
     function startApp() {
         if (monitorTimer) clearInterval(monitorTimer);
         
-        const interval = localStorage.getItem('gold_interval') || 30;
-        const premium = localStorage.getItem('gold_premium') || 12;
+        const interval = localStorage.getItem('gold_interval') || 5;
+        const premium = localStorage.getItem('gold_premium') || 7.1;
         const theme = localStorage.getItem('theme') || 'dark';
     
         document.getElementById('intervalInput').value = interval;
@@ -262,6 +262,7 @@
 </body>
 
 </html>
+
 
 
 
