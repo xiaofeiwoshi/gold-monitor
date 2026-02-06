@@ -169,8 +169,7 @@
 </div>
 
 <script>
-    const GOLD_API = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://hq.sinajs.cn/list=fx_sauxau');
-    const FX_API = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://hq.sinajs.cn/list=fx_susdcny');
+    const MY_WORKER_URL = 'https://goldapi.18391787044.workers.dev/';
     
     async function updateGoldPrice() {
         const priceVal = document.getElementById('price-val');
@@ -178,27 +177,19 @@
         priceVal.classList.add('loading');
     
         try {
-            // 使用 Promise.all 同时获取金价和汇率
-            const [goldRes, fxRes] = await Promise.all([
-                fetch(GOLD_API),
-                fetch(FX_API)
-            ]);
+            // 请求你自己做的中转接口
+            const response = await fetch(MY_WORKER_URL);
+            const data = await response.json();
             
-            const goldJson = await goldRes.json();
-            const fxJson = await fxRes.json();
+            // 接口 2: 汇率 (这个接口通常国内可以直接访问，如果不稳也可以按同样方法写进 Worker)
+            const fxRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+            const fxData = await fxRes.json();
     
-            // 解析新浪返回的字符串格式: var hq_str_fx_sauxau="...,2028.45,..."
-            const goldData = goldJson.contents.split(',');
-            const fxData = fxJson.contents.split(',');
-    
-            const usdOzPrice = parseFloat(goldData[1]); // 国际现货金价
-            const usdCnyRate = parseFloat(fxData[1]); // 美元兑人民币汇率
-            
-            if (isNaN(usdOzPrice) || isNaN(usdCnyRate)) throw new Error("解析失败");
-    
+            const usdOzPrice = parseFloat(data.price);
+            const usdCnyRate = fxData.rates.CNY;
             const premium = parseFloat(document.getElementById('premiumInput').value) || 0;
     
-            // 核心换算：(国际金价 / 31.1035) * 汇率 + 溢价
+            // 换算人民币/克
             const basePriceGram = (usdOzPrice / 31.1035) * usdCnyRate;
             const finalPrice = (basePriceGram + premium).toFixed(2);
     
@@ -206,13 +197,13 @@
             priceVal.classList.remove('loading');
             
             statusBox.innerHTML = `
-                国际黄金: $${usdOzPrice.toFixed(2)}<br>
-                当前汇率: ${usdCnyRate.toFixed(4)}<br>
-                更新于: ${new Date().toLocaleTimeString()}
+                国际黄金: $${usdOzPrice.toFixed(2)} /oz<br>
+                汇率: ${usdCnyRate.toFixed(4)} | 溢价: ${premium}元<br>
+                更新: ${new Date().toLocaleTimeString()}
             `;
         } catch (error) {
             console.error(error);
-            statusBox.innerHTML = `<span style="color:#ff453a">国内数据链路阻塞，请稍后再试</span>`;
+            statusBox.innerHTML = `<span style="color:#ff453a">获取失败，请确认 Worker 地址是否正确</span>`;
         }
     }
 
@@ -248,4 +239,5 @@
 </body>
 
 </html>
+
 
