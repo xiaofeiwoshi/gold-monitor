@@ -176,37 +176,27 @@
         priceVal.classList.add('loading');
     
         try {
-            // 请求同域名下的 functions 接口
             const response = await fetch(MY_WORKER_URL);
-            
-            // 如果 Functions 还没生效，尝试直连京东（部分浏览器在特定情况下允许）
-            if (!response.ok) {
-                const directRes = await fetch("https://ms.jr.jd.com/gw/generic/hj/h5/m/latestPrice?reqData=%7B%7D");
-                const directData = await directRes.json();
-                // 如果直连成功，手动构造 data 结构
-                var data = { 
-                    price: directData.resultData.datas.price, 
-                    yesterday: directData.resultData.datas.yesterdayPrice 
-                };
-            } else {
-                var data = await response.json();
-            }
+            const data = await response.json();
     
             if (data.error) throw new Error(data.error);
     
+            // --- 核心修改：直接取值，不再加 premium ---
             const jdPrice = parseFloat(data.price); 
-            const premium = parseFloat(document.getElementById('premiumInput').value) || 0;
-            const finalPrice = (jdPrice + premium).toFixed(2);
+            const finalPrice = jdPrice.toFixed(2);
     
+            // 计算涨跌
             const change = (jdPrice - data.yesterday).toFixed(2);
             const changeSymbol = change >= 0 ? '▲' : '▼';
             const changeColor = change >= 0 ? '#ff453a' : '#32d74b';
     
+            // 更新大字价格
             priceVal.innerText = finalPrice;
             priceVal.classList.remove('loading');
             
+            // 更新下方状态栏
             statusBox.innerHTML = `
-                京东基准: ¥${jdPrice.toFixed(2)} /g<br>
+                京东实时: ¥${jdPrice.toFixed(2)} /g<br>
                 今日涨跌: <span style="color:${changeColor}">${changeSymbol} ${Math.abs(change).toFixed(2)}</span><br>
                 更新: ${new Date().toLocaleTimeString()}
             `;
@@ -214,7 +204,7 @@
         } catch (error) {
             console.error("更新失败:", error);
             priceVal.innerText = "Error";
-            statusBox.innerHTML = `<span style="color:#ff453a">接口尝试中... 请确保 GitHub 已上传 functions 文件夹</span>`;
+            statusBox.innerHTML = `<span style="color:#ff453a">获取失败，正在重试...</span>`;
         }
     }
     
@@ -256,6 +246,7 @@
 </body>
 
 </html>
+
 
 
 
