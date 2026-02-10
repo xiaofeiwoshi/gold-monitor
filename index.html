@@ -216,26 +216,18 @@
         localStorage.setItem('theme', targetTheme);
     }
     
-    // 应用设置逻辑
     function applySettings() {
         localStorage.setItem('gold_interval', document.getElementById('intervalInput').value);
-        localStorage.setItem('gold_premium', document.getElementById('premiumInput').value);
         startApp();
         alert('配置已保存');
     }
     
-    // 启动 App
     function startApp() {
         if (monitorTimer) clearInterval(monitorTimer);
         
-        const interval = localStorage.getItem('gold_interval') || 5;
-        const premium = localStorage.getItem('gold_premium') || 7.1;
-        const theme = localStorage.getItem('theme') || 'dark';
-    
+        const interval = localStorage.getItem('gold_interval') || 30;
         document.getElementById('intervalInput').value = interval;
-        document.getElementById('premiumInput').value = premium;
-        document.documentElement.setAttribute('data-theme', theme);
-    
+        
         updateGoldPrice();
         monitorTimer = setInterval(updateGoldPrice, interval * 1000);
     }
@@ -246,6 +238,7 @@
 </body>
 
 </html>
+
 
 
 
