@@ -177,50 +177,38 @@
     async function updateGoldPrice() {
         const priceVal = document.getElementById('price-val');
         const statusBox = document.getElementById('status-box');
-        
-        // 开启加载状态
         priceVal.classList.add('loading');
     
         try {
-            // 请求你自己的 Worker
             const response = await fetch(MY_WORKER_URL);
             const data = await response.json();
     
-            // 检查 Worker 是否报错
             if (data.error) throw new Error(data.error);
     
-            const usdPrice = data.usdPrice; // 国际金价
-            const cnyRate = data.cnyRate;   // 汇率
+            // 核心逻辑：京东价 + 你填写的实物溢价
+            const jdPrice = data.price; 
             const premium = parseFloat(document.getElementById('premiumInput').value) || 0;
+            const finalPrice = (jdPrice + premium).toFixed(2);
     
-            // --- 计算逻辑说明 ---
-            // 如果 usdPrice 是盎司价 (约2000+)，则需要 / 31.1035
-            // 如果 usdPrice 已经是克价，则直接乘以汇率
-            // 鉴于你目前回显是 4800+，这通常是某种克价的变体或特定基数，
-            // 这里假设它是盎司价进行标准换算：
-            let basePriceGram;
-            if (usdPrice > 1000) {
-                basePriceGram = (usdPrice / 31.1035) * cnyRate;
-            } else {
-                basePriceGram = usdPrice * cnyRate;
-            }
+            // 计算涨跌情况
+            const change = (jdPrice - data.yesterday).toFixed(2);
+            const changeSymbol = change >= 0 ? '▲' : '▼';
+            const changeColor = change >= 0 ? '#ff453a' : '#32d74b'; // 涨红跌绿
     
-            const finalPrice = (basePriceGram + premium).toFixed(2);
-    
-            // 更新界面
             priceVal.innerText = finalPrice;
             priceVal.classList.remove('loading');
             
+            // 状态栏显示京东原始价和涨跌
             statusBox.innerHTML = `
-                国际金价: $${usdPrice.toFixed(2)} /oz<br>
-                实时汇率: ${cnyRate.toFixed(4)}<br>
-                更新时间: ${new Date(data.time).toLocaleTimeString()}
+                京东基准: ¥${jdPrice.toFixed(2)} /g<br>
+                今日涨跌: <span style="color:${changeColor}">${changeSymbol} ${Math.abs(change).toFixed(2)}</span><br>
+                更新: ${new Date().toLocaleTimeString()}
             `;
     
         } catch (error) {
             console.error("更新失败:", error);
             priceVal.innerText = "Error";
-            statusBox.innerHTML = `<span style="color:#ff453a">数据同步失败: ${error.message}</span>`;
+            statusBox.innerHTML = `<span style="color:#ff453a">获取京东数据失败: ${error.message}</span>`;
         }
     }
     
@@ -262,6 +250,7 @@
 </body>
 
 </html>
+
 
 
 
