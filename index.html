@@ -158,7 +158,7 @@
     <div class="controls">
         <div class="input-group">
             <label>自动刷新频率 (秒)</label>
-            <input type="number" id="intervalInput" min="5" value="30">
+            <input type="number" id="intervalInput" min="5" value="5">
         </div>
         <button onclick="applySettings()">应用配置</button>
     </div>
@@ -196,7 +196,7 @@
             
             // 更新下方状态栏
             statusBox.innerHTML = `
-                京东实时: ¥${jdPrice.toFixed(2)} /g<br>
+                金价实时: ¥${jdPrice.toFixed(2)} /g<br>
                 今日涨跌: <span style="color:${changeColor}">${changeSymbol} ${Math.abs(change).toFixed(2)}</span><br>
                 更新: ${new Date().toLocaleTimeString()}
             `;
@@ -238,6 +238,7 @@
 </body>
 
 </html>
+
 
 
 
